@@ -218,6 +218,42 @@ jobs:
           }
           Write-Host 'package validated'
 
+      - name: Sign sideload package (self-signed, for Xbox Dev Mode)
+        shell: pwsh
+        run: |
+          # Dev Mode installs through the Device Portal, which needs a signed
+          # package plus the matching .cer. Subject must equal the manifest
+          # Publisher (CN=RafaelCruz). A fresh cert per run is fine for sideload.
+          $msix = Get-ChildItem -Recurse -Filter *.msix -Path shell |
+                  Where-Object { $_.FullName -like '*_Test*' } | Select-Object -First 1
+          if (-not $msix) { Write-Error 'no sideload msix to sign'; exit 1 }
+          $cert = New-SelfSignedCertificate -Type Custom -Subject 'CN=RafaelCruz' `
+            -KeyUsage DigitalSignature -FriendlyName 'RomM Xbox sideload' `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -TextExtension @('2.5.29.37={text}1.3.6.1.5.5.7.3.3','2.5.29.19={text}') `
+            -NotAfter (Get-Date).AddYears(2)
+          $pw = ConvertTo-SecureString -String ([guid]::NewGuid().ToString()) -Force -AsPlainText
+          $pfx = Join-Path $env:RUNNER_TEMP 'sideload.pfx'
+          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $pw | Out-Null
+          $cer = Join-Path $msix.DirectoryName 'RomMXbox-sideload.cer'
+          Export-Certificate -Cert $cert -FilePath $cer | Out-Null
+          $sdk = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Directory |
+                 Where-Object { Test-Path (Join-Path $_.FullName 'x64\signtool.exe') } |
+                 Sort-Object Name -Descending | Select-Object -First 1
+          $plain = [System.Net.NetworkCredential]::new('', $pw).Password
+          & (Join-Path $sdk.FullName 'x64\signtool.exe') sign /fd SHA256 /f $pfx /p $plain $msix.FullName
+          if ($LASTEXITCODE -ne 0) { Write-Error 'signtool failed'; exit 1 }
+          Remove-Item $pfx -Force
+          "SIDELOAD_DIR=$($msix.DirectoryName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "signed $($msix.FullName)"
+
+      - name: Upload sideload package (signed MSIX + .cer + dependencies)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cartridge-Xbox-sideload
+          path: ${{ env.SIDELOAD_DIR }}
+          if-no-files-found: error
+
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:
