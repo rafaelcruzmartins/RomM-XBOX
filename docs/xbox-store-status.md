@@ -1,8 +1,8 @@
-# Cartridge for Xbox: package status and history
+# Cliente de Servidor Xbox: package status and history
 
 ## Current source architecture (2026-10-24)
 
-The current package is the native UWP/WebView2 project under `shell/`, not the old hosted-web-app generator. It supplies native gamepad input and a native network bridge. Public branding is **Cartridge for Xbox**; the registered package identity, publisher and Store product `9MXC51W17LH4` stay unchanged.
+The current package is the native UWP/WebView2 project under `shell/`, not the old hosted-web-app generator. It supplies native gamepad input and a native network bridge. Public branding is **Cliente de Servidor Xbox**; the registered package identity, publisher and Store product `9MXC51W17LH4` stay unchanged.
 
 The CI workflow builds the actual x64 native package and tests its URL/error and JavaScript transport logic on relevant pull requests. A passing package build does not prove playback on an Xbox. No new hardware validation is claimed for this update; consult the run linked from the PR for the exact build result.
 

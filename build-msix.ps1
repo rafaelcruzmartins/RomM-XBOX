@@ -1,4 +1,4 @@
-# Build the Cartridge for Xbox UWP app into a sideloadable MSIX.
+# Build the Cliente de Servidor Xbox UWP app into a sideloadable MSIX.
 # Run from an x64 Native Tools / normal PowerShell AFTER the Visual Studio
 # "Universal Windows Platform build tools" workload is installed.
 #
