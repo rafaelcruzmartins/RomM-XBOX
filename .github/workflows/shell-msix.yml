@@ -204,10 +204,10 @@ jobs:
           if ($m.Package.Properties.DisplayName -ne 'Cartridge for Xbox') {
             Write-Error 'public product name is wrong in the built package'; exit 1
           }
-          if ($id.Name -ne 'MOVEWEIGHT.RomMforXbox') {
+          if ($id.Name -ne 'RafaelCruz.RomMXbox') {
             Write-Error "identity name drifted from the Partner Center product"; exit 1
           }
-          if ($id.Publisher -ne 'CN=6375D74B-5E4F-45B4-B246-B29507C1332A') {
+          if ($id.Publisher -ne 'CN=RafaelCruz') {
             Write-Error "publisher drifted from the Partner Center product"; exit 1
           }
           $fams = $m.Package.Dependencies.TargetDeviceFamily | ForEach-Object { $_.Name }

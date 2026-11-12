@@ -62,7 +62,7 @@ Adapt this to your RomM deployment rather than assuming those paths already exis
 
 ## Native Xbox app
 
-The Store product remains **[9MXC51W17LH4](https://apps.microsoft.com/detail/9mxc51w17lh4)**. The public name is **Cartridge for Xbox**. The package identity `MOVEWEIGHT.RomMforXbox` and registered publisher are retained so this remains an update to the same product.
+This fork uses its own placeholder package identity (`RafaelCruz.RomMXbox`); replace it with the Partner Center values of your own app before a Store submission. Upstream Store product: [9MXC51W17LH4](https://apps.microsoft.com/detail/9mxc51w17lh4) (not ours).
 
 Store approval/publication is separate from a successful GitHub build. An unsigned CI artifact is not a retail-console installer. Dev Mode testing requires the appropriate package trust/signing and device setup.
 
