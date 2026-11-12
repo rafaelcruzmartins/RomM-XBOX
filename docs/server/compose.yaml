@@ -1,0 +1,36 @@
+# RomM em /opt/stacks/romm/compose.yaml (padrão do servidor: um app por pasta).
+# Não testado: revisar versões/variáveis na doc oficial do RomM antes de subir.
+services:
+  romm:
+    image: rommapp/romm:latest          # fixar uma versão depois do primeiro teste
+    container_name: romm
+    restart: unless-stopped
+    depends_on: [romm-db]
+    environment:
+      - DB_HOST=romm-db
+      - DB_NAME=romm
+      - DB_USER=romm
+      - DB_PASSWD=${DB_PASSWD}
+      - ROMM_AUTH_SECRET_KEY=${ROMM_AUTH_SECRET_KEY}   # openssl rand -hex 32
+      - IGDB_CLIENT_ID=${IGDB_CLIENT_ID:-}
+      - IGDB_CLIENT_SECRET=${IGDB_CLIENT_SECRET:-}
+    volumes:
+      - /mnt/hd/Roms:/romm/library        # ROMs no HD interno, nunca no SSD
+      - ./data/resources:/romm/resources
+      - ./data/assets:/romm/assets        # saves e states
+      - ./data/config:/romm/config
+    ports:
+      - "8080:8080"                       # http://192.168.3.50:8080 (default do app)
+    mem_limit: 768m
+  romm-db:
+    image: mariadb:11
+    container_name: romm-db
+    restart: unless-stopped
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWD}
+      - MARIADB_DATABASE=romm
+      - MARIADB_USER=romm
+      - MARIADB_PASSWORD=${DB_PASSWD}
+    volumes:
+      - ./data/db:/var/lib/mysql
+    mem_limit: 512m

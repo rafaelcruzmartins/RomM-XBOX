@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Identity must stay byte-identical to Partner Center product 9MXC51W17LH4,
-     or the Store treats this as a different app. -->
+<!-- Placeholder identity. Before a Store submission, replace Name/Publisher with the values
+     from the Partner Center reservation of your own app (Product identity page). -->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   IgnorableNamespaces="uap mp">
 
-  <Identity Name="MOVEWEIGHT.RomMforXbox"
-            Publisher="CN=6375D74B-5E4F-45B4-B246-B29507C1332A"
+  <Identity Name="RafaelCruz.RomMXbox"
+            Publisher="CN=RafaelCruz"
             Version="0.31.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="4f1c9e6a-3b7d-4e2a-9c51-8d0a6f2b7c31"
@@ -16,7 +16,7 @@
 
   <Properties>
     <DisplayName>Cartridge for Xbox</DisplayName>
-    <PublisherDisplayName>MOVE WEIGHT</PublisherDisplayName>
+    <PublisherDisplayName>Rafael Cruz</PublisherDisplayName>
     <Description>Cartridge for Xbox connects to your self-hosted RomM library with controller navigation. Unofficial; not affiliated with or endorsed by the RomM project.</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>

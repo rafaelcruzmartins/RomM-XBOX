@@ -18,7 +18,7 @@ It appears under *Apps* as **RomM for Xbox**.
 ### Already have an older build?
 
 **Just install the new one the same way — do not uninstall first.** Every build
-shares one package identity (`MOVEWEIGHT.RomMforXbox`) and the version only ever
+shares one package identity (`RafaelCruz.RomMXbox`) and the version only ever
 goes up, so a higher version replaces the lower one in place and your server
 address and sign-in are kept.
 

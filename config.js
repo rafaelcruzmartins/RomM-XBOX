@@ -71,13 +71,16 @@ const CFG = (() => {
   // renderer, which otherwise surfaces as an unexplained failure. Inside the
   // shell this does not apply: every server request is routed through our own
   // origin and unwrapped natively (see HOST.route).
+  // Pre-filled server so nobody types it with the on-screen keyboard. Empty = ask.
+  const DEFAULT_SERVER = 'http://192.168.3.50:8080';
+
   function mixedContentBlocked(server) {
     if (typeof HOST !== 'undefined' && HOST.present) return false;
     return location.protocol === 'https:' && /^http:\/\//i.test(server);
   }
 
   return {
-    get server() { return get(K.server); },
+    get server() { return get(K.server) || DEFAULT_SERVER; },
     set server(v) { set(K.server, v); },
     get stream() { return get(K.stream); },
     set stream(v) { set(K.stream, v); },

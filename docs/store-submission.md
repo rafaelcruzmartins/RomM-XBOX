@@ -18,8 +18,8 @@ Identity is fixed and must not drift from the product:
 
 | | |
 |---|---|
-| Name | `MOVEWEIGHT.RomMforXbox` |
-| Publisher | `CN=6375D74B-5E4F-45B4-B246-B29507C1332A` |
+| Name | `RafaelCruz.RomMXbox` |
+| Publisher | `CN=RafaelCruz` |
 | Version | `0.29.0.0` (raise for every resubmission — the Store rejects a repeat) |
 | Architecture | `x64` (Xbox is x64; a C# UWP app cannot be `neutral`) |
 
