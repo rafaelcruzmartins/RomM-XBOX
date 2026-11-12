@@ -1,8 +1,8 @@
-# Cliente de Servidor Xbox
+# Cofre de Jogos
 
 Browse your self-hosted RomM library with an Xbox controller, then play through a compatible browser core or your configured streaming server.
 
-[![Build Cliente de Servidor Xbox](https://github.com/rafaelcruzmartins/RomM-XBOX/actions/workflows/shell-msix.yml/badge.svg)](https://github.com/rafaelcruzmartins/RomM-XBOX/actions/workflows/shell-msix.yml)
+[![Build Cofre de Jogos](https://github.com/rafaelcruzmartins/RomM-XBOX/actions/workflows/shell-msix.yml/badge.svg)](https://github.com/rafaelcruzmartins/RomM-XBOX/actions/workflows/shell-msix.yml)
 
 **[Connect](#connect-your-library)** · **[Browser deployment](#browser-deployment)** · **[Native Xbox build](#native-xbox-app)** · **[Known limits](#what-is-and-is-not-verified)** · **[Report a problem](https://github.com/BlizzHacker/RommForXbox/issues)**
 
@@ -99,4 +99,4 @@ The [package history and hardware test checklist](docs/xbox-store-status.md) exp
 - [ROMarr](https://github.com/BlizzHacker/romarr): acquisition and library automation.
 - [ROM Hub](https://github.com/BlizzHacker/rom-hub): source and metadata plugins.
 
-Cliente de Servidor Xbox is an independent, unofficial fork of Cartridge for Xbox (BlizzHacker), and is not endorsed by the RomM or Microsoft projects.
+Cofre de Jogos is an independent, unofficial fork of Cartridge for Xbox (BlizzHacker), and is not endorsed by the RomM or Microsoft projects.

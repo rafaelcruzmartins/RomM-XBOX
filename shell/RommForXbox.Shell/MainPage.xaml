@@ -13,6 +13,6 @@
                    TextWrapping="Wrap"
                    VerticalAlignment="Center"
                    HorizontalAlignment="Center"
-                   Text="Starting Cliente de Servidor Xbox…" />
+                   Text="Starting Cofre de Jogos…" />
     </Grid>
 </Page>

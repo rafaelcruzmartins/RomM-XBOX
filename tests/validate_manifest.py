@@ -13,15 +13,15 @@ assert identity is not None
 assert identity.attrib["Name"] == "RafaelCruz.RomMXbox", "package identity changed"
 assert identity.attrib["Publisher"] == "CN=RafaelCruz", "Store publisher changed"
 assert manifest.find("p:Properties/p:PublisherDisplayName", NS).text == "Rafael Cruz"
-assert manifest.find("p:Properties/p:DisplayName", NS).text == "Cliente de Servidor Xbox"
+assert manifest.find("p:Properties/p:DisplayName", NS).text == "Cofre de Jogos"
 app = manifest.find("p:Applications/p:Application", NS)
 assert "Executable" in app.attrib and "StartPage" not in app.attrib, "Native shell replaced by hosted package"
 visual = app.find("uap:VisualElements", NS)
-assert visual.attrib["DisplayName"] == "Cliente de Servidor Xbox"
+assert visual.attrib["DisplayName"] == "Cofre de Jogos"
 families = manifest.findall("p:Dependencies/p:TargetDeviceFamily", NS)
 assert "Windows.Xbox" in {family.attrib["Name"] for family in families}
-assert "<title>Cliente de Servidor Xbox</title>" in (ROOT / "index.html").read_text()
-assert "Starting Cliente de Servidor Xbox" in (ROOT / "shell/RommForXbox.Shell/MainPage.xaml").read_text()
+assert "<title>Cofre de Jogos</title>" in (ROOT / "index.html").read_text()
+assert "Starting Cofre de Jogos" in (ROOT / "shell/RommForXbox.Shell/MainPage.xaml").read_text()
 
 project = ET.parse(ROOT / "shell/RommForXbox.Shell/RommForXbox.Shell.csproj").getroot()
 for content in project.findall(".//{http://schemas.microsoft.com/developer/msbuild/2003}Content"):

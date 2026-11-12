@@ -1,4 +1,4 @@
-name: Build Cliente de Servidor Xbox
+name: Build Cofre de Jogos
 
 # The UWP workload is several GB and is not installed on the dev machine, so the
 # packaged app is built here instead. Diagnostics run before the build so a
@@ -201,7 +201,7 @@ jobs:
           $id = $m.Package.Identity
           Write-Host ("identity: {0} {1} {2}" -f $id.Name, $id.Version, $id.ProcessorArchitecture)
           Write-Host ("publisher: {0}" -f $id.Publisher)
-          if ($m.Package.Properties.DisplayName -ne 'Cliente de Servidor Xbox') {
+          if ($m.Package.Properties.DisplayName -ne 'Cofre de Jogos') {
             Write-Error 'public product name is wrong in the built package'; exit 1
           }
           if ($id.Name -ne 'RafaelCruz.RomMXbox') {
