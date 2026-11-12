@@ -1,0 +1,229 @@
+name: Build Cartridge for Xbox
+
+# The UWP workload is several GB and is not installed on the dev machine, so the
+# packaged app is built here instead. Diagnostics run before the build so a
+# missing component is identifiable from one failed run rather than three.
+
+on:
+  pull_request:
+    paths:
+      - 'shell/**'
+      - 'tests/**'
+      - '.github/workflows/shell-msix.yml'
+      - '*.js'
+      - 'index.html'
+      - 'style.css'
+      - 'build-msix.ps1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'shell/**'
+      - 'tests/**'
+      - '.github/workflows/shell-msix.yml'
+      - '*.js'
+      - 'index.html'
+      - 'style.css'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: xbox-shell-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Toolchain diagnostics
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          & $vswhere -products * -format value -property installationPath
+          $ip = & $vswhere -products * -format value -property installationPath | Select-Object -First 1
+          Write-Host "--- UWP (AppxPackage) targets ---"
+          $appx = Join-Path $ip 'MSBuild\Microsoft\VisualStudio\v17.0\AppxPackage'
+          if (Test-Path $appx) { Get-ChildItem $appx | Select-Object -First 8 Name }
+          else { Write-Host "MISSING: $appx  (UWP workload not present on this image)" }
+          Write-Host "--- Windows SDKs ---"
+          $sdk = "${env:ProgramFiles(x86)}\Windows Kits\10\Platforms\UAP"
+          if (Test-Path $sdk) { Get-ChildItem $sdk | Select-Object Name } else { Write-Host "no UAP platforms" }
+          Write-Host "--- MSBuild ---"
+          msbuild -version
+
+      - name: Validate brand and Store identity
+        shell: pwsh
+        run: python tests/validate_manifest.py
+
+      - name: Validate EmulatorJS core names
+        shell: pwsh
+        run: |
+          # An EJS_CORES value that is not a real EmulatorJS system browses fine
+          # and fails only when the user presses A. Four were wrong at once.
+          node tests/validate_cores.js
+          if ($LASTEXITCODE -ne 0) { Write-Error 'invalid core mapping'; exit 1 }
+
+      - name: Test shell logic (RoutedUrl, ProxyError)
+        shell: pwsh
+        run: |
+          # The pieces of native logic that silently break everything if wrong, or
+          # that a tester reads off a screen. Both are kept free of WinRT types so
+          # they can be tested with csc instead of only on a console.
+          $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          $exe = Join-Path $env:RUNNER_TEMP 'shell-logic-tests.exe'
+          $ref = (Get-ChildItem "${env:ProgramFiles(x86)}\Reference Assemblies\Microsoft\Framework\.NETFramework" `
+                   -Filter System.Net.Http.dll -Recurse -ErrorAction SilentlyContinue |
+                   Select-Object -First 1).FullName
+          & $csc /nologo /warn:0 /r:"$ref" /out:$exe `
+            shell\tests\RoutedUrlTests.cs `
+            shell\RommForXbox.Shell\RoutedUrl.cs `
+            shell\RommForXbox.Shell\ProxyError.cs
+          if ($LASTEXITCODE -ne 0) { Write-Error 'test compile failed'; exit 1 }
+          & $exe
+          if ($LASTEXITCODE -ne 0) { Write-Error 'shell logic tests failed'; exit 1 }
+
+      - name: Test connect + error-mapping logic (Node)
+        shell: pwsh
+        run: |
+          # Pins candidate ordering, native-vs-direct routing, network-error
+          # classification, and the per-reason setup messages, so the connect
+          # matrix fails CI rather than a user's console.
+          node shell/tests/bridge-logic.test.mjs
+          if ($LASTEXITCODE -ne 0) { Write-Error 'bridge logic tests failed'; exit 1 }
+
+      - name: Test the http-LAN transport (Node, runs the real host-bridge.js)
+        shell: pwsh
+        run: |
+          # Drives the SHIPPED host-bridge.js against a simulated shell: streamed
+          # head/chunk/end, acknowledgement pacing, progress, error reasons, and
+          # the XMLHttpRequest shim EmulatorJS's core downloads depend on. This
+          # path only ever ran on a retail console before, which is how a 24MB
+          # transfer cap shipped to the Store and made most games undownloadable
+          # on a plain-http LAN server.
+          node shell/tests/native-fetch.test.mjs
+          if ($LASTEXITCODE -ne 0) { Write-Error 'native fetch transport tests failed'; exit 1 }
+
+      - name: Generate build stamp
+        shell: pwsh
+        run: |
+          # The authoritative version comes from the manifest at runtime; this
+          # adds the git SHA and build date so diagnostics can name the exact
+          # bits. Written into web/ so it ships inside the package and the shell
+          # can inject it into RomM's /console pages too.
+          $sha = (git rev-parse --short HEAD)
+          $date = (Get-Date -Format 'yyyy-MM-dd')
+          $js = "window.__CARTRIDGE_BUILD = { sha: '$sha', date: '$date' };"
+          Set-Content -Path 'build-stamp.js' -Value $js -Encoding utf8
+          Write-Host "build stamp: $sha $date"
+
+      - name: Restore
+        shell: pwsh
+        run: |
+          msbuild shell\RommForXbox.Shell.sln /t:Restore `
+            /p:Configuration=Release /p:Platform=x64 `
+            /p:RestorePackagesConfig=true /v:minimal
+
+      - name: Build MSIX
+        shell: pwsh
+        run: |
+          msbuild shell\RommForXbox.Shell\RommForXbox.Shell.csproj `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /p:AppxBundle=Never `
+            /p:AppxBundlePlatforms=x64 `
+            /p:UapAppxPackageBuildMode=StoreUpload `
+            /p:AppxPackageSigningEnabled=false `
+            /p:GenerateAppInstallerFile=false `
+            /v:minimal /consoleloggerparameters:Summary 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { throw 'MSIX build failed; see build.log' }
+
+      - name: Fail if .NET Native has no runtime directives
+        shell: pwsh
+        run: |
+          # ILT0027 means ILC compiled with NO runtime directives, which strips
+          # the reflection metadata XAML needs to activate types through COM.
+          # That crashes the app at the splash with NotSupportedException
+          # (0x80131515), and it is only a warning, so assert on the compiler
+          # output rather than on the rd.xml file existing: an rd.xml wired up
+          # with the wrong item type is silently ignored and looks identical.
+          $log = Get-Content build.log -Raw -ErrorAction SilentlyContinue
+          if ($log -and $log -match 'ILT0027') {
+            Write-Error 'ILT0027: runtime directives were not picked up'
+            exit 1
+          }
+
+      - name: Locate output
+        id: out
+        shell: pwsh
+        run: |
+          $pkgs = Get-ChildItem -Recurse -Include *.msix,*.msixupload,*.appx `
+            -Path shell -ErrorAction SilentlyContinue
+          if (-not $pkgs) { Write-Error "no package produced"; exit 1 }
+          $pkgs | ForEach-Object { Write-Host ("{0}  {1:N0} bytes" -f $_.FullName, $_.Length) }
+
+      - name: Validate package contents
+        shell: pwsh
+        run: |
+          # A package that builds but ships no web content would install and then
+          # show a blank screen on the console, where it is hardest to diagnose.
+          $sdk = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Directory |
+                 Where-Object { Test-Path (Join-Path $_.FullName 'x64\makeappx.exe') } |
+                 Sort-Object Name -Descending | Select-Object -First 1
+          $makeappx = Join-Path $sdk.FullName 'x64\makeappx.exe'
+          Write-Host "using $makeappx"
+
+          $msix = Get-ChildItem -Recurse -Filter *.msix -Path shell |
+                  Where-Object { $_.FullName -like '*_Test*' } |
+                  Select-Object -First 1
+          if (-not $msix) { Write-Error 'no sideload msix to inspect'; exit 1 }
+
+          $dest = Join-Path $env:RUNNER_TEMP 'unpacked'
+          & $makeappx unpack /p $msix.FullName /d $dest /nv | Out-Null
+          if ($LASTEXITCODE -ne 0) { Write-Error 'unpack failed'; exit 1 }
+
+          Write-Host '--- packaged web content ---'
+          Get-ChildItem (Join-Path $dest 'web') -ErrorAction SilentlyContinue |
+            ForEach-Object { Write-Host ("  {0}  {1:N0} B" -f $_.Name, $_.Length) }
+
+          $required = @('index.html','style.css','app.js','romm.js','config.js',
+                        'osk.js','gamepad.js','host-bridge.js','rtc.js')
+          $missing = $required | Where-Object { -not (Test-Path (Join-Path $dest "web\$_")) }
+          if ($missing) { Write-Error ("missing from package: " + ($missing -join ', ')); exit 1 }
+
+          [xml]$m = Get-Content (Join-Path $dest 'AppxManifest.xml')
+          $id = $m.Package.Identity
+          Write-Host ("identity: {0} {1} {2}" -f $id.Name, $id.Version, $id.ProcessorArchitecture)
+          Write-Host ("publisher: {0}" -f $id.Publisher)
+          if ($m.Package.Properties.DisplayName -ne 'Cartridge for Xbox') {
+            Write-Error 'public product name is wrong in the built package'; exit 1
+          }
+          if ($id.Name -ne 'MOVEWEIGHT.RomMforXbox') {
+            Write-Error "identity name drifted from the Partner Center product"; exit 1
+          }
+          if ($id.Publisher -ne 'CN=6375D74B-5E4F-45B4-B246-B29507C1332A') {
+            Write-Error "publisher drifted from the Partner Center product"; exit 1
+          }
+          $fams = $m.Package.Dependencies.TargetDeviceFamily | ForEach-Object { $_.Name }
+          Write-Host ("device families: " + ($fams -join ', '))
+          if ($fams -notcontains 'Windows.Xbox') { Write-Error 'Xbox family missing'; exit 1 }
+          if (-not (Test-Path (Join-Path $dest 'web\build-stamp.js'))) {
+            Write-Error 'build-stamp.js missing from package'; exit 1
+          }
+          Write-Host 'package validated'
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cartridge-Xbox-x64-msix
+          path: |
+            shell/**/*.msix
+            shell/**/*.msixupload
+            shell/**/AppxManifest.xml
+          if-no-files-found: error

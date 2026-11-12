@@ -1,0 +1,10 @@
+dist/
+
+# UWP build outputs + local test signing cert
+shell/RommForXbox.Shell/bin/
+shell/RommForXbox.Shell/obj/
+shell/RommForXbox.Shell/AppPackages/
+shell/RommForXbox.Shell/*.pfx
+
+# Editor/agent scratch (the parent workspace config already covers this repo)
+.claude/
